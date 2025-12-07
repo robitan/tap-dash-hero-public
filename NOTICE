@@ -1,0 +1,71 @@
+Tap Dash Hero
+Copyright 2025 Tap Dash Hero Contributors
+
+This product includes software developed at Tap Dash Hero project.
+
+================================================================================
+
+NOTICE FOR AUDIO FILES
+================================================================================
+
+The audio files located in the src/assets/audio/ directory are NOT licensed
+under the Apache License 2.0. These files are provided for demonstration
+purposes only.
+
+Audio files included:
+  - bgm.mp3
+  - dash.mp3
+  - explosion.mp3
+  - powerup.mp3
+
+These audio files are proprietary and may not be redistributed, modified, or
+used for commercial purposes without explicit permission from the original
+copyright holders.
+
+If you fork or use this project, you MUST replace these audio files with your
+own or properly licensed alternatives.
+
+================================================================================
+
+NOTICE FOR IMAGE FILES
+================================================================================
+
+The image files located in the src/assets/images/ directory are NOT licensed
+under the Apache License 2.0. Some of these images may have been obtained from
+free image sites or other sources with different licensing terms.
+
+These image files are excluded from the Apache 2.0 license and may not be
+redistributed, modified, or used without verifying their original license terms.
+
+If you fork or use this project, you MUST replace these image files with your
+own or properly licensed alternatives.
+
+================================================================================
+
+THIRD-PARTY SOFTWARE LICENSES
+================================================================================
+
+This project uses the following open source software:
+
+Phaser (v3.88.2)
+  License: MIT License
+  Homepage: https://phaser.io/
+  Copyright (c) 2023 Photon Storm Ltd.
+
+Howler.js (v2.2.3)
+  License: MIT License
+  Homepage: https://howlerjs.com/
+  Copyright (c) 2013-2023 James Simpson and GoldFire Studios, Inc.
+
+localForage (v1.10.0)
+  License: Apache License 2.0
+  Homepage: https://localforage.github.io/localForage/
+  Copyright (c) 2013-2016 Mozilla
+
+stats.js (v0.17.0)
+  License: MIT License
+  Homepage: https://github.com/mrdoob/stats.js/
+  Copyright (c) 2009-2023 stats.js authors
+
+For full license texts of third-party software, please visit their respective
+project pages.

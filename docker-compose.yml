@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    container_name: tap-dash-hero-app-1
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - tap-dash-hero_default
+
+networks:
+  tap-dash-hero_default:
+    name: tap-dash-hero_default
+    driver: bridge
