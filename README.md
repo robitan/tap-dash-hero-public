@@ -55,6 +55,12 @@ Audio files included (not covered by Apache 2.0):
 - `explosion.mp3`
 - `powerup.mp3`
 
+### ⚠️ Image Files Exception
+
+**Image files are NOT included under the Apache 2.0 license.** All image files in the `src/assets/images/` directory are excluded from the Apache 2.0 license. Some of these images may have been obtained from free image sites or other sources with different licensing terms.
+
+If you fork or use this project, you **MUST replace the image files** with your own or properly licensed alternatives.
+
 ### Third-Party Software
 
 This project uses the following open source libraries:
