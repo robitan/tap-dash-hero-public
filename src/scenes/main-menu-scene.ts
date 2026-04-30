@@ -101,8 +101,7 @@ export class MainMenuScene extends Phaser.Scene {
 
         // 設定ボタンの操作
         settingsButton.on('pointerdown', () => {
-            console.log('Settings button clicked');
-            // TODO: Implement settings scene
+            this.scene.start('SettingsScene');
         });
 
         settingsButton.on('pointerover', () => {

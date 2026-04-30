@@ -56,6 +56,7 @@ export class GameplayScene extends Phaser.Scene {
     private dashSound!: Phaser.Sound.BaseSound;
     private explosionSound!: Phaser.Sound.BaseSound;
     private powerupSound!: Phaser.Sound.BaseSound;
+    private isGameOver: boolean = false;
 
     constructor() {
         super({ key: 'GameplayScene' });
@@ -73,6 +74,7 @@ export class GameplayScene extends Phaser.Scene {
         this.chargeAmount = 0;
         this.isCharging = false;
         this.isEvading = false;
+        this.isGameOver = false;
 
         // パワーアップ状態をリセット
         this.hasShield = false;
@@ -364,6 +366,8 @@ export class GameplayScene extends Phaser.Scene {
 
         // タッチ開始（ホールド開始またはスワイプ開始）
         this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            if (this.isGameOver) return;
+
             // スワイプ検出用の初期位置を記録
             swipeStartX = pointer.x;
             swipeStartY = pointer.y;
@@ -385,6 +389,8 @@ export class GameplayScene extends Phaser.Scene {
 
         // タッチ移動（ダッシュ方向の更新またはスワイプ検出）
         this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+            if (this.isGameOver) return;
+
             if (this.isCharging) {
                 // ダッシュ方向の目標を更新
                 this.dashTarget.x = pointer.x;
@@ -420,6 +426,8 @@ export class GameplayScene extends Phaser.Scene {
 
         // タッチ終了（ダッシュ実行）
         this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+            if (this.isGameOver) return;
+
             if (this.isCharging && this.energy >= 20) {
                 // チャージ時間を計算
                 const chargeDuration = Math.min(this.time.now - this.chargeStartTime, this.maxChargeDuration);
@@ -477,9 +485,10 @@ export class GameplayScene extends Phaser.Scene {
     }
 
     private setupSounds(): void {
-        this.dashSound = this.sound.add('dash');
-        this.explosionSound = this.sound.add('explosion');
-        this.powerupSound = this.sound.add('powerup');
+        const seVolume = this.registry.get('seVolume') ?? 0.8;
+        this.dashSound = this.sound.add('dash', { volume: seVolume });
+        this.explosionSound = this.sound.add('explosion', { volume: seVolume });
+        this.powerupSound = this.sound.add('powerup', { volume: seVolume });
     }
 
     private spawnEnemy(): void {
@@ -939,14 +948,22 @@ export class GameplayScene extends Phaser.Scene {
      * 回避アクションを実行する
      */
     private performEvade(angle: number): void {
-        if (this.isEvading) return;
+        if (this.isEvading || this.isGameOver) return;
 
         this.isEvading = true;
 
         // 回避方向に瞬間的に移動
         const evadeDistance = 150;
-        const targetX = this.player.x + Math.cos(angle) * evadeDistance;
-        const targetY = this.player.y + Math.sin(angle) * evadeDistance;
+        const targetX = Phaser.Math.Clamp(
+            this.player.x + Math.cos(angle) * evadeDistance,
+            this.player.displayWidth / 2,
+            this.cameras.main.width - this.player.displayWidth / 2
+        );
+        const targetY = Phaser.Math.Clamp(
+            this.player.y + Math.sin(angle) * evadeDistance,
+            this.player.displayHeight / 2,
+            this.cameras.main.height - this.player.displayHeight / 2
+        );
 
         // 回避エフェクト
         if (this.evadeEffect) {
@@ -1341,11 +1358,17 @@ export class GameplayScene extends Phaser.Scene {
      * ゲーム終了処理
      */
     private endGame(): void {
+        if (this.isGameOver) return;
+        this.isGameOver = true;
+
         // ゲームタイマーを停止
-        this.gameTimer.remove();
+        if (this.gameTimer) {
+            this.gameTimer.remove();
+        }
 
         // 敵のスポーンを停止
         this.time.removeAllEvents();
+        this.input.enabled = false;
 
         // 最終スコアを保存
         ScoreManager.updateHighScore(this.score);

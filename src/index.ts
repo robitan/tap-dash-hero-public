@@ -5,6 +5,7 @@ import { PreloadScene } from './scenes/preload-scene';
 import { MainMenuScene } from './scenes/main-menu-scene';
 import { GameplayScene } from './scenes/gameplay-scene';
 import { TutorialScene } from './scenes/tutorial-scene';
+import { SettingsScene } from './scenes/settings-scene';
 
 // Add scenes to the game config
 GameConfig.scene = [
@@ -12,7 +13,8 @@ GameConfig.scene = [
     PreloadScene,
     MainMenuScene,
     GameplayScene,
-    TutorialScene
+    TutorialScene,
+    SettingsScene
 ];
 
 // Create the game instance

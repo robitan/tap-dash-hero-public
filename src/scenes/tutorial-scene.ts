@@ -18,7 +18,7 @@ export class TutorialScene extends Phaser.Scene {
         title.setOrigin(0.5, 0.5);
 
         // スクロール可能なテキストコンテナを作成
-        const content = this.createTutorialContent(width, height);
+        this.createTutorialContent(width, height);
 
         // 戻るボタン
         const backButton = this.add.image(width / 2, height - 60, 'button');
@@ -53,6 +53,7 @@ export class TutorialScene extends Phaser.Scene {
         const contentY = 100;
         const contentHeight = height - 180; // タイトルと戻るボタンのスペースを除く
         const padding = 20;
+        const minY = contentY + padding;
 
         // 背景
         const bg = this.add.rectangle(width / 2, contentY + contentHeight / 2, width - padding * 2, contentHeight, 0x000000, 0.5);
@@ -138,6 +139,39 @@ export class TutorialScene extends Phaser.Scene {
             });
 
             yOffset += 15; // セクション間のスペース
+        });
+
+        // クリッピング領域
+        const maskShape = this.make.graphics({});
+        maskShape.fillRect(padding, contentY, width - padding * 2, contentHeight);
+        const mask = maskShape.createGeometryMask();
+        container.setMask(mask);
+
+        const contentBottom = yOffset;
+        const minContainerY = Math.min(0, contentHeight - (contentBottom - minY) - padding);
+        const maxContainerY = 0;
+
+        const applyScroll = (nextY: number) => {
+            container.y = Phaser.Math.Clamp(nextY, minContainerY, maxContainerY);
+        };
+
+        this.input.on('wheel', (_pointer: Phaser.Input.Pointer, _gameObjects: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
+            applyScroll(container.y - deltaY * 0.25);
+        });
+
+        let dragStartY = 0;
+        let containerStartY = 0;
+        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            if (pointer.x >= padding && pointer.x <= width - padding && pointer.y >= contentY && pointer.y <= contentY + contentHeight) {
+                dragStartY = pointer.y;
+                containerStartY = container.y;
+            }
+        });
+
+        this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+            if (!pointer.isDown) return;
+            if (pointer.x < padding || pointer.x > width - padding) return;
+            applyScroll(containerStartY + (pointer.y - dragStartY));
         });
 
         return container;
