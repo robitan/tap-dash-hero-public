@@ -55,16 +55,17 @@ export class MainMenuScene extends Phaser.Scene {
         });
         tutorialText.setOrigin(0.5, 0.5);
 
-        // Add settings button with responsive sizing
+        // Add settings button (disabled - coming soon)
         const settingsButton = this.add.image(width / 2, height / 2 + 160, 'button');
         ImageUtils.scaleToScreenPercent(settingsButton, 0.4, 0.1); // 40% width, 10% height
-        settingsButton.setInteractive();
+        settingsButton.setAlpha(0.5);
 
-        const settingsText = this.add.text(width / 2, height / 2 + 160, 'SETTINGS', {
-            font: 'bold 24px Arial',
+        const settingsText = this.add.text(width / 2, height / 2 + 160, 'SETTINGS (Coming Soon)', {
+            font: 'bold 20px Arial',
             color: '#000000'
         });
         settingsText.setOrigin(0.5, 0.5);
+        settingsText.setAlpha(0.5);
 
         // Add version text
         const versionText = this.add.text(width - 10, height - 10, 'v0.1.0', {
@@ -99,27 +100,26 @@ export class MainMenuScene extends Phaser.Scene {
             tutorialButton.clearTint();
         });
 
-        // 設定ボタンの操作
-        settingsButton.on('pointerdown', () => {
-            console.log('Settings button clicked');
-            // TODO: Implement settings scene
-        });
-
-        settingsButton.on('pointerover', () => {
-            settingsButton.setTint(0xcccccc);
-        });
-
-        settingsButton.on('pointerout', () => {
-            settingsButton.clearTint();
-        });
-
-        // Add background music
+        // Add background music (with browser autoplay policy handling)
         if (!this.sound.get('bgm')) {
             const music = this.sound.add('bgm', {
                 volume: 0.5,
                 loop: true
             });
-            music.play();
+            try {
+                music.play();
+            } catch {
+                // Autoplay blocked by browser policy - retry on user interaction
+                this.input.once('pointerdown', () => {
+                    music.play();
+                });
+            }
+            // Also handle Phaser's audio unlock event
+            this.sound.once('unlocked', () => {
+                if (!(music as Phaser.Sound.WebAudioSound | Phaser.Sound.HTML5AudioSound).isPlaying) {
+                    music.play();
+                }
+            });
         }
     }
 

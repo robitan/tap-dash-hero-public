@@ -14,6 +14,9 @@ export class GameplayScene extends Phaser.Scene {
     private comboText!: Phaser.GameObjects.Text;
     private timerText!: Phaser.GameObjects.Text;
 
+    // ゲームオーバーフラグ（重複呼び出し防止）
+    private isGameOver: boolean = false;
+
     // スワイプ回避関連の変数
     private isEvading: boolean = false;
     private evadeDuration: number = 300; // 回避の持続時間（ミリ秒）
@@ -73,6 +76,7 @@ export class GameplayScene extends Phaser.Scene {
         this.chargeAmount = 0;
         this.isCharging = false;
         this.isEvading = false;
+        this.isGameOver = false;
 
         // パワーアップ状態をリセット
         this.hasShield = false;
@@ -346,6 +350,12 @@ export class GameplayScene extends Phaser.Scene {
         );
         this.timerText.setOrigin(1, 0);
 
+        // Energy bar label
+        this.add.text(20, 68, 'Energy', {
+            font: '12px Arial',
+            color: '#aaaaaa'
+        });
+
         // Energy bar
         this.energyBar = this.add.graphics();
         this.updateEnergyBar();
@@ -586,8 +596,9 @@ export class GameplayScene extends Phaser.Scene {
     }
 
     private handleEnemyCollision(player: Phaser.GameObjects.GameObject, enemy: Phaser.GameObjects.GameObject): void {
-        // 回避中は当たり判定を無効化
+        // 回避中・ゲームオーバー中は当たり判定を無効化
         if (this.isEvading) return;
+        if (this.isGameOver) return;
 
         const e = enemy as Phaser.Physics.Arcade.Sprite;
         const health = e.getData('health') as number;
@@ -660,6 +671,9 @@ export class GameplayScene extends Phaser.Scene {
                     }
                 });
             } else {
+                // コンボをリセット
+                this.resetCombo();
+
                 // プレイヤーがダメージを受けたエフェクト
                 this.player.setTint(0xff0000); // プレイヤーを赤く点滅させる
 
@@ -910,7 +924,7 @@ export class GameplayScene extends Phaser.Scene {
         // 画面上部にコンボブーストの表示
         const boostText = this.add.text(
             this.cameras.main.width / 2,
-            40,
+            110,
             'コンボブースト!',
             {
                 font: 'bold 24px Arial',
@@ -945,8 +959,14 @@ export class GameplayScene extends Phaser.Scene {
 
         // 回避方向に瞬間的に移動
         const evadeDistance = 150;
-        const targetX = this.player.x + Math.cos(angle) * evadeDistance;
-        const targetY = this.player.y + Math.sin(angle) * evadeDistance;
+        const targetX = Phaser.Math.Clamp(
+            this.player.x + Math.cos(angle) * evadeDistance,
+            0, this.cameras.main.width
+        );
+        const targetY = Phaser.Math.Clamp(
+            this.player.y + Math.sin(angle) * evadeDistance,
+            0, this.cameras.main.height
+        );
 
         // 回避エフェクト
         if (this.evadeEffect) {
@@ -1204,6 +1224,14 @@ export class GameplayScene extends Phaser.Scene {
     }
 
     /**
+     * コンボをリセット
+     */
+    private resetCombo(): void {
+        this.combo = 0;
+        this.comboText.setVisible(false);
+    }
+
+    /**
      * ボス敵をスポーン
      */
     private spawnBoss(): void {
@@ -1249,8 +1277,9 @@ export class GameplayScene extends Phaser.Scene {
      * ボス敵との衝突処理
      */
     private handleBossCollision(player: Phaser.GameObjects.GameObject, boss: Phaser.GameObjects.GameObject): void {
-        // 回避中は当たり判定を無効化
+        // 回避中・ゲームオーバー中は当たり判定を無効化
         if (this.isEvading) return;
+        if (this.isGameOver) return;
 
         if (this.player.body && this.player.body.velocity.length() > 100) {
             // プレイヤーがダッシュ中、ボスにダメージ
@@ -1302,8 +1331,9 @@ export class GameplayScene extends Phaser.Scene {
      * ボスの弾との衝突処理
      */
     private handleBossBulletCollision(player: Phaser.GameObjects.GameObject, bullet: Phaser.GameObjects.GameObject): void {
-        // 回避中は当たり判定を無効化
+        // 回避中・ゲームオーバー中は当たり判定を無効化
         if (this.isEvading) return;
+        if (this.isGameOver) return;
 
         // 弾を消す
         bullet.destroy();
@@ -1341,11 +1371,17 @@ export class GameplayScene extends Phaser.Scene {
      * ゲーム終了処理
      */
     private endGame(): void {
+        if (this.isGameOver) return;
+        this.isGameOver = true;
+
         // ゲームタイマーを停止
         this.gameTimer.remove();
 
         // 敵のスポーンを停止
         this.time.removeAllEvents();
+
+        // タイマー点滅アルファをリセット
+        this.timerText.setAlpha(1);
 
         // 最終スコアを保存
         ScoreManager.updateHighScore(this.score);
@@ -1359,10 +1395,11 @@ export class GameplayScene extends Phaser.Scene {
             0x000000,
             0.7
         );
+        overlay.setInteractive(); // タッチ貫通防止
 
         const gameOverText = this.add.text(
             this.cameras.main.width / 2,
-            this.cameras.main.height / 3,
+            this.cameras.main.height * 0.2,
             'GAME OVER',
             {
                 font: 'bold 48px Arial',
@@ -1373,7 +1410,7 @@ export class GameplayScene extends Phaser.Scene {
 
         const finalScoreText = this.add.text(
             this.cameras.main.width / 2,
-            this.cameras.main.height / 2,
+            this.cameras.main.height * 0.35,
             `SCORE: ${this.score}`,
             {
                 font: 'bold 32px Arial',
@@ -1382,22 +1419,55 @@ export class GameplayScene extends Phaser.Scene {
         );
         finalScoreText.setOrigin(0.5, 0.5);
 
-        // ミッション達成状況表示
-        const missionResultText = this.add.text(
+        // 統計情報表示
+        const statsText = this.add.text(
             this.cameras.main.width / 2,
-            this.cameras.main.height / 2 + 50,
-            `敵を倒した数: ${this.enemiesDefeated}`,
+            this.cameras.main.height * 0.45,
+            `敵を倒した数: ${this.enemiesDefeated}\n最大コンボ: x${this.maxCombo}\nパワーアップ取得: ${this.powerupsCollected}`,
             {
-                font: '20px Arial',
-                color: '#cccccc'
+                font: '18px Arial',
+                color: '#cccccc',
+                align: 'center',
+                lineSpacing: 6
             }
         );
-        missionResultText.setOrigin(0.5, 0.5);
+        statsText.setOrigin(0.5, 0.5);
+
+        // リトライボタン
+        const retryButton = this.add.rectangle(
+            this.cameras.main.width / 2,
+            this.cameras.main.height * 0.62,
+            200,
+            50,
+            0x2266aa
+        );
+        retryButton.setInteractive();
+
+        const retryText = this.add.text(
+            this.cameras.main.width / 2,
+            this.cameras.main.height * 0.62,
+            'Retry',
+            {
+                font: 'bold 24px Arial',
+                color: '#ffffff'
+            }
+        );
+        retryText.setOrigin(0.5, 0.5);
+
+        retryButton.on('pointerover', () => {
+            retryButton.setFillStyle(0x3388cc);
+        });
+        retryButton.on('pointerout', () => {
+            retryButton.setFillStyle(0x2266aa);
+        });
+        retryButton.on('pointerdown', () => {
+            this.scene.restart();
+        });
 
         // メニューに戻るボタン
         const menuButton = this.add.rectangle(
             this.cameras.main.width / 2,
-            this.cameras.main.height * 0.7,
+            this.cameras.main.height * 0.73,
             200,
             50,
             0x444444
@@ -1406,7 +1476,7 @@ export class GameplayScene extends Phaser.Scene {
 
         const menuText = this.add.text(
             this.cameras.main.width / 2,
-            this.cameras.main.height * 0.7,
+            this.cameras.main.height * 0.73,
             'Back to Menu',
             {
                 font: '24px Arial',
@@ -1415,6 +1485,12 @@ export class GameplayScene extends Phaser.Scene {
         );
         menuText.setOrigin(0.5, 0.5);
 
+        menuButton.on('pointerover', () => {
+            menuButton.setFillStyle(0x666666);
+        });
+        menuButton.on('pointerout', () => {
+            menuButton.setFillStyle(0x444444);
+        });
         menuButton.on('pointerdown', () => {
             this.scene.start('MainMenuScene');
         });

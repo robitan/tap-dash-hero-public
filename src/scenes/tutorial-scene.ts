@@ -2,6 +2,12 @@ import Phaser from 'phaser';
 import { ImageUtils } from '../utils/image-utils';
 
 export class TutorialScene extends Phaser.Scene {
+    private contentContainer!: Phaser.GameObjects.Container;
+    private scrollY: number = 0;
+    private minScrollY: number = 0;
+    private readonly contentAreaTop: number = 100;
+    private contentAreaHeight: number = 0;
+
     constructor() {
         super({ key: 'TutorialScene' });
     }
@@ -10,6 +16,9 @@ export class TutorialScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
+        this.contentAreaHeight = height - 180; // タイトルと戻るボタンのスペースを除く
+        this.scrollY = 0;
+
         // タイトル
         const title = this.add.text(width / 2, 60, '遊び方', {
             font: 'bold 28px Arial',
@@ -17,8 +26,22 @@ export class TutorialScene extends Phaser.Scene {
         });
         title.setOrigin(0.5, 0.5);
 
+        // コンテンツ背景（固定表示）
+        const padding = 20;
+        this.add.rectangle(
+            width / 2,
+            this.contentAreaTop + this.contentAreaHeight / 2,
+            width - padding * 2,
+            this.contentAreaHeight,
+            0x000000,
+            0.5
+        );
+
         // スクロール可能なテキストコンテナを作成
-        const content = this.createTutorialContent(width, height);
+        this.createTutorialContent(width);
+
+        // スクロール入力のセットアップ
+        this.setupScrollInput(width);
 
         // 戻るボタン
         const backButton = this.add.image(width / 2, height - 60, 'button');
@@ -46,17 +69,54 @@ export class TutorialScene extends Phaser.Scene {
     }
 
     /**
+     * スクロール入力をセットアップする
+     */
+    private setupScrollInput(width: number): void {
+        // スクロール領域のインタラクティブゾーン
+        const scrollZone = this.add.rectangle(
+            width / 2,
+            this.contentAreaTop + this.contentAreaHeight / 2,
+            width,
+            this.contentAreaHeight,
+            0x000000,
+            0
+        );
+        scrollZone.setInteractive();
+
+        let dragStartY = 0;
+        let dragStartScrollY = 0;
+        let isDragging = false;
+
+        scrollZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            dragStartY = pointer.y;
+            dragStartScrollY = this.scrollY;
+            isDragging = true;
+        });
+
+        this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+            if (isDragging && pointer.isDown) {
+                const dy = pointer.y - dragStartY;
+                this.scrollY = Phaser.Math.Clamp(
+                    dragStartScrollY + dy,
+                    this.minScrollY,
+                    0
+                );
+                this.contentContainer.setY(this.scrollY);
+            }
+        });
+
+        this.input.on('pointerup', () => {
+            isDragging = false;
+        });
+    }
+
+    /**
      * チュートリアルの内容を作成する
      */
-    private createTutorialContent(width: number, height: number): Phaser.GameObjects.Container {
-        const container = this.add.container(0, 0);
-        const contentY = 100;
-        const contentHeight = height - 180; // タイトルと戻るボタンのスペースを除く
+    private createTutorialContent(width: number): void {
+        this.contentContainer = this.add.container(0, 0);
+        const contentY = this.contentAreaTop;
         const padding = 20;
-
-        // 背景
-        const bg = this.add.rectangle(width / 2, contentY + contentHeight / 2, width - padding * 2, contentHeight, 0x000000, 0.5);
-        container.add(bg);
 
         // テキスト内容
         const sections = [
@@ -121,7 +181,7 @@ export class TutorialScene extends Phaser.Scene {
                 color: '#ffff00'
             });
             titleText.setOrigin(0.5, 0);
-            container.add(titleText);
+            this.contentContainer.add(titleText);
 
             yOffset += 30;
 
@@ -132,7 +192,7 @@ export class TutorialScene extends Phaser.Scene {
                     color: '#ffffff',
                     wordWrap: { width: width - padding * 4 }
                 });
-                container.add(contentText);
+                this.contentContainer.add(contentText);
 
                 yOffset += contentText.height + 10;
             });
@@ -140,6 +200,15 @@ export class TutorialScene extends Phaser.Scene {
             yOffset += 15; // セクション間のスペース
         });
 
-        return container;
+        // スクロール範囲を計算（コンテンツが表示エリアより長い場合のみスクロール可能）
+        const totalContentHeight = yOffset - contentY;
+        this.minScrollY = Math.min(0, this.contentAreaHeight - totalContentHeight);
+
+        // コンテンツ領域にマスクを適用
+        const maskGraphics = this.add.graphics();
+        maskGraphics.fillStyle(0xffffff);
+        maskGraphics.fillRect(0, this.contentAreaTop, width, this.contentAreaHeight);
+        const mask = maskGraphics.createGeometryMask();
+        this.contentContainer.setMask(mask);
     }
 }
