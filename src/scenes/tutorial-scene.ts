@@ -55,8 +55,19 @@ export class TutorialScene extends Phaser.Scene {
         const padding = 20;
 
         // 背景
-        const bg = this.add.rectangle(width / 2, contentY + contentHeight / 2, width - padding * 2, contentHeight, 0x000000, 0.5);
-        container.add(bg);
+        this.add.rectangle(width / 2, contentY + contentHeight / 2, width - padding * 2, contentHeight, 0x000000, 0.5);
+
+        const scrollHint = this.add.text(width / 2, contentY + contentHeight - 10, 'スワイプ / ホイールでスクロール', {
+            font: '12px Arial',
+            color: '#cccccc'
+        });
+        scrollHint.setOrigin(0.5, 1);
+
+        const maskGraphics = this.add.graphics();
+        maskGraphics.fillStyle(0xffffff);
+        maskGraphics.fillRect(padding, contentY, width - padding * 2, contentHeight);
+        maskGraphics.setVisible(false);
+        container.setMask(maskGraphics.createGeometryMask());
 
         // テキスト内容
         const sections = [
@@ -138,6 +149,31 @@ export class TutorialScene extends Phaser.Scene {
             });
 
             yOffset += 15; // セクション間のスペース
+        });
+
+        const contentStartY = contentY + padding;
+        const contentTotalHeight = yOffset - contentStartY;
+        const visibleHeight = contentHeight - (padding * 2);
+        const minScrollY = Math.min(0, visibleHeight - contentTotalHeight);
+        let scrollY = 0;
+
+        const applyScroll = (deltaY: number): void => {
+            if (minScrollY === 0) {
+                return;
+            }
+            scrollY = Phaser.Math.Clamp(scrollY + deltaY, minScrollY, 0);
+            container.y = scrollY;
+        };
+
+        this.input.on('wheel', (_pointer: Phaser.Input.Pointer, _targets: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
+            applyScroll(-deltaY * 0.4);
+        });
+
+        this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+            if (!pointer.isDown || pointer.y < contentY || pointer.y > contentY + contentHeight) {
+                return;
+            }
+            applyScroll(pointer.velocity.y * 0.02);
         });
 
         return container;

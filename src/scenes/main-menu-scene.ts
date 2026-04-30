@@ -75,6 +75,7 @@ export class MainMenuScene extends Phaser.Scene {
 
         // Add button interactions
         playButton.on('pointerdown', () => {
+            playButton.clearTint();
             this.scene.start('GameplayScene');
         });
 
@@ -88,6 +89,7 @@ export class MainMenuScene extends Phaser.Scene {
 
         // チュートリアルボタンの操作
         tutorialButton.on('pointerdown', () => {
+            tutorialButton.clearTint();
             this.scene.start('TutorialScene');
         });
 
@@ -100,9 +102,24 @@ export class MainMenuScene extends Phaser.Scene {
         });
 
         // 設定ボタンの操作
+        settingsButton.setAlpha(0.7);
+        settingsText.setAlpha(0.7);
         settingsButton.on('pointerdown', () => {
-            console.log('Settings button clicked');
-            // TODO: Implement settings scene
+            settingsButton.clearTint();
+            const noticeText = this.add.text(width / 2, height / 2 + 220, '設定画面は準備中です', {
+                font: '16px Arial',
+                color: '#ffffff',
+                backgroundColor: '#000000',
+                padding: { x: 10, y: 6 }
+            });
+            noticeText.setOrigin(0.5, 0.5);
+            this.tweens.add({
+                targets: noticeText,
+                alpha: 0,
+                duration: 1200,
+                delay: 800,
+                onComplete: () => noticeText.destroy()
+            });
         });
 
         settingsButton.on('pointerover', () => {
