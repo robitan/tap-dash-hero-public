@@ -155,6 +155,10 @@ export class TutorialScene extends Phaser.Scene {
         const contentTotalHeight = yOffset - contentStartY;
         const visibleHeight = contentHeight - (padding * 2);
         const minScrollY = Math.min(0, visibleHeight - contentTotalHeight);
+        const viewportMinX = padding;
+        const viewportMaxX = width - padding;
+        const viewportMinY = contentY;
+        const viewportMaxY = contentY + contentHeight;
         let scrollY = 0;
 
         const applyScroll = (deltaY: number): void => {
@@ -165,15 +169,23 @@ export class TutorialScene extends Phaser.Scene {
             container.y = scrollY;
         };
 
-        this.input.on('wheel', (_pointer: Phaser.Input.Pointer, _targets: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
+        const wheelHandler = (_pointer: Phaser.Input.Pointer, _targets: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number): void => {
             applyScroll(-deltaY * 0.4);
-        });
+        };
 
-        this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-            if (!pointer.isDown || pointer.y < contentY || pointer.y > contentY + contentHeight) {
+        const pointerMoveHandler = (pointer: Phaser.Input.Pointer): void => {
+            const inViewport = pointer.x >= viewportMinX && pointer.x <= viewportMaxX && pointer.y >= viewportMinY && pointer.y <= viewportMaxY;
+            if (!pointer.isDown || !inViewport) {
                 return;
             }
             applyScroll(pointer.velocity.y * 0.02);
+        };
+
+        this.input.on('wheel', wheelHandler);
+        this.input.on('pointermove', pointerMoveHandler);
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.input.off('wheel', wheelHandler);
+            this.input.off('pointermove', pointerMoveHandler);
         });
 
         return container;
