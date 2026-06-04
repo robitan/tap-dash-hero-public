@@ -226,8 +226,6 @@ export class EnemyManager {
                 enemy.setData('speed', 30); // より遅い
                 enemy.setData('score', 20);
                 enemy.setData('explosionRadius', 100); // 爆発半径
-                // 爆発する敵は特殊な見た目
-                enemy.setTint(0xff5500);
                 ImageUtils.scaleToScreenPercent(enemy, 0.08);
                 return; // 爆発する敵はここで設定完了
         }
